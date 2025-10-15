@@ -636,7 +636,6 @@ public static class HtmlReportWriter
         var result = results[0];
         string returnPage = Path.Combine("..", "index.html");
         html.Append(ComparisonTemplate.Replace("{source}", sourceServer.name).Replace("{destination}", destinationServer.name).Replace("{MetaData}", result.Type).Replace("{nav}", BuildNav(run, isIgnoredEmpty,ignoredCount)));
-        // ▼ ADD THIS RIGHT AFTER the html.Append(ComparisonTemplate...) call
         html.AppendLine(@"
         <style>
           .row-done { background:#eee; }

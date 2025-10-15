@@ -164,7 +164,7 @@ public class DbComparer : DbObjectHandler
         Serilog.Log.Information("Procs:");
 
         // Step 4 - Loop over each procedure and compare
-          Parallel.ForEach(procedures, parallelOptions, procTuple =>
+        Parallel.ForEach(procedures, parallelOptions, procTuple =>
         {
             string schema = procTuple.schema;
             string proc = procTuple.name;

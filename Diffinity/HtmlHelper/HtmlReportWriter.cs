@@ -206,6 +206,29 @@ public static class HtmlReportWriter
         .return-btn:hover {
             background-color: #b42a68;
         }
+        .icon-btn {
+          background: transparent;        /* remove gray background */
+          border: none;                   /* remove border */
+          padding: 0;                     /* remove extra padding */
+          margin-left: 8px;               /* keep a small gap after ""View"" */
+          cursor: pointer;
+          line-height: 0;                 /* avoid extra vertical space */
+          vertical-align: middle;
+          appearance: none;               /* reset default styles */
+          -webkit-appearance: none;
+          box-shadow: none;               /* ensure no shadow */
+        }
+
+         
+
+        .icon-btn svg {
+          display: block;         
+        }
+
+        .icon-btn:hover svg {
+          transform: translateY(-1px);    /* tiny hover lift (optional) */
+        }
+
     </style>
 </head>
 <body>
@@ -710,11 +733,11 @@ public static class HtmlReportWriter
             // Build the copy payloads
             string sourceCopy = item.Type == "Table"
                 ? PrintTableInfo(item.SourceTableInfo, new List<string>())
-                : ReadBodyPayload(summaryDir, item.SourceFile, item.SourceBody);
+                : CopyText(summaryDir, item.SourceFile, item.SourceBody);
 
             string destCopy = item.Type == "Table"
                 ? PrintTableInfo(item.DestinationTableInfo, new List<string>())
-                : ReadBodyPayload(summaryDir, item.DestinationFile, null);
+                : CopyText(summaryDir, item.DestinationFile, null);
 
             // HTML-encode before injecting into the hidden span
             string safeSourceCopy = System.Web.HttpUtility.HtmlEncode(sourceCopy ?? string.Empty);
@@ -804,7 +827,7 @@ public static class HtmlReportWriter
                        </html>");
         #endregion
 
-        static string ReadBodyPayload(string baseDir, string? htmlRelativePath, string? fallbackPlainText)
+        static string CopyText(string baseDir, string? htmlRelativePath, string? fallbackPlainText)
         {
             if (!string.IsNullOrWhiteSpace(fallbackPlainText))
                 return fallbackPlainText;
@@ -829,17 +852,8 @@ public static class HtmlReportWriter
                     "<span\\s+[^>]*class=(?:\"|')(?=[^\"']*\\bcopy-target\\b)[^\"']*(?:\"|')[^>]*>",
                     RegexOptions.IgnoreCase);
 
-                if (!open.Success)
-                {
-                    var alt = Regex.Match(html, "<div\\s+[^>]*class=(?:\"|')[^\"']*\\bcode-scroll\\b[^\"']*(?:\"|')[^>]*>", RegexOptions.IgnoreCase);
-                    if (!alt.Success) return string.Empty;
-
-                    string innerAlt = ExtractBalanced(html, alt.Index + alt.Length, "div");
-                    return HtmlDecodeAndStrip(innerAlt);
-                }
-
-                string inner = ExtractBalanced(html, open.Index + open.Length, "span");
-                return HtmlDecodeAndStrip(inner);
+                string inner = GetTagContents(html, open.Index + open.Length, "span");
+                return HtmlToPlainText(inner);
             }
             catch
             {
@@ -847,18 +861,19 @@ public static class HtmlReportWriter
             }
 
             // ---- local helpers ----
-            static string HtmlDecodeAndStrip(string s)
+            static string HtmlToPlainText(string s)
             {
                 if (string.IsNullOrEmpty(s)) return string.Empty;
                 string noTags = Regex.Replace(s, "<[^>]+>", string.Empty, RegexOptions.Singleline);
                 return System.Net.WebUtility.HtmlDecode(noTags).Trim();
             }
 
-            static string ExtractBalanced(string text, int startContentIdx, string tagName)
+            static string GetTagContents(string text, int startContentIdx, string tagName)
             {
-                int depth = 1;
+                int depth = 1; // Think of depth as “how many <tagName>s are open and not yet closed.”
                 int pos = startContentIdx;
                 while (pos < text.Length && depth > 0)
+                // depth > 0: still have unmatched open tags.
                 {
                     int nextOpen = IndexOfTag(text, "<" + tagName, pos);
                     int nextClose = IndexOfTag(text, "</" + tagName, pos);

@@ -592,7 +592,7 @@ public static class HtmlReportWriter
     /// <summary>
     /// Writes the main index summary HTML page linking to individual reports for procedures, views, and tables.
     /// </summary>
-    public static string WriteIndexSummary(string sourceConnectionString, string destinationConnectionString, string outputPath, long Duration, string? ignoredIndexPath = null, string? procIndexPath = null, string? viewIndexPath = null, string? tableIndexPath = null, int procCount = -1, int viewCount = -1, int tableCount = -1)
+    public static string WriteIndexSummary(string sourceConnectionString, string destinationConnectionString, string outputPath, long Duration, string? ignoredIndexPath = null, string? procIndexPath = null, string? viewIndexPath = null, string? tableIndexPath = null, int? procCount = 0, int? viewCount = 0 , int? tableCount = 0)
     {
         // Extract server and database names from connection strings
         var sourceBuilder = new SqlConnectionStringBuilder(sourceConnectionString);
@@ -610,15 +610,15 @@ public static class HtmlReportWriter
         string formattedDuration = $"{minutes:F1} minutes";
 
         static bool Show(string? path, int count) =>
-            !string.IsNullOrWhiteSpace(path) && (count < 0 || count > 0);
+            !string.IsNullOrWhiteSpace(path) && (count > 0);
 
-        string procsIndex = Show(procIndexPath, procCount)
+        string procsIndex = Show(procIndexPath, procCount.Value)
             ? $@"<a href=""{procIndexPath}""  class=""btn"">Procedures</a>" : "";
 
-        string viewsIndex = Show(viewIndexPath, viewCount)
+        string viewsIndex = Show(viewIndexPath, viewCount.Value)
             ? $@"<a href=""{viewIndexPath}""  class=""btn"">Views</a>" : "";
 
-        string tablesIndex = Show(tableIndexPath, tableCount)
+        string tablesIndex = Show(tableIndexPath, tableCount.Value)
             ? $@"<a href=""{tableIndexPath}"" class=""btn"">Tables</a>" : "";
 
         string ignoredIndex = string.IsNullOrWhiteSpace(ignoredIndexPath)

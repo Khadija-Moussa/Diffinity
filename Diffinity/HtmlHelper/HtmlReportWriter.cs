@@ -724,10 +724,10 @@ public static class HtmlReportWriter
             string summaryDir = Path.GetDirectoryName(summaryPath) ?? summaryPath;
             string srcPlain = item.Type == "Table"
                 ? PrintTableInfo(item.SourceTableInfo ?? new List<tableDto>(), new List<string>())
-                : ReadBodyPayload(summaryDir, item.SourceFile, null);
+                : CopyText(summaryDir, item.SourceFile);
             string dstPlain = item.Type == "Table"
                 ? PrintTableInfo(item.DestinationTableInfo ?? new List<tableDto>(), new List<string>())
-                : ReadBodyPayload(summaryDir, item.DestinationFile, null);
+                : CopyText(summaryDir, item.DestinationFile);
             // HTML-encode before embedding inside hidden spans
             string srcEnc = System.Net.WebUtility.HtmlEncode(srcPlain ?? string.Empty);
             string dstEnc = System.Net.WebUtility.HtmlEncode(dstPlain ?? string.Empty);
@@ -764,10 +764,8 @@ public static class HtmlReportWriter
                 Number++;
             }
             // ------- local helper -------
-            static string ReadBodyPayload(string baseDir, string? htmlRelativePath, string? fallbackPlainText)
+            static string CopyText(string baseDir, string? htmlRelativePath)
             {
-                if (!string.IsNullOrWhiteSpace(fallbackPlainText))
-                    return fallbackPlainText;
 
                 if (string.IsNullOrWhiteSpace(htmlRelativePath))
                     return string.Empty;
@@ -783,58 +781,45 @@ public static class HtmlReportWriter
 
                     string html = File.ReadAllText(fullPath);
 
-                    // Prefer <span class="copy-target">...</span>
-                    var spanOpen = Regex.Match(
+                    // --- locate <span class="copy-target"> (handles nested spans safely) ---
+                    var open = Regex.Match(
                         html,
                         "<span\\s+[^>]*class=(?:\"|')(?=[^\"']*\\bcopy-target\\b)[^\"']*(?:\"|')[^>]*>",
                         RegexOptions.IgnoreCase);
 
-                    if (spanOpen.Success)
-                    {
-                        string inner = ExtractBalanced(html, spanOpen.Index + spanOpen.Length, "span");
-                        return StripAndDecode(inner);
-                    }
-
-                    // Fallback: <div class="code-scroll">...</div>
-                    var divOpen = Regex.Match(
-                        html,
-                        "<div\\s+[^>]*class=(?:\"|')[^\"']*\\bcode-scroll\\b[^\"']*(?:\"|')[^>]*>",
-                        RegexOptions.IgnoreCase);
-
-                    if (divOpen.Success)
-                    {
-                        string inner = ExtractBalanced(html, divOpen.Index + divOpen.Length, "div");
-                        return StripAndDecode(inner);
-                    }
-
-                    return string.Empty;
+                    string inner = GetTagContents(html, open.Index + open.Length, "span");
+                    return HtmlToPlainText(inner);
                 }
                 catch
                 {
                     return string.Empty;
                 }
 
-                static string StripAndDecode(string s)
+                // ---- local helpers ----
+                static string HtmlToPlainText(string s)
                 {
                     if (string.IsNullOrEmpty(s)) return string.Empty;
                     string noTags = Regex.Replace(s, "<[^>]+>", string.Empty, RegexOptions.Singleline);
                     return System.Net.WebUtility.HtmlDecode(noTags).Trim();
                 }
 
-                static string ExtractBalanced(string text, int startContentIdx, string tagName)
+                static string GetTagContents(string text, int startContentIdx, string tagName)
                 {
-                    int depth = 1, pos = startContentIdx;
+                    int depth = 1; // Think of depth as “how many <tagName>s are open and not yet closed.”
+                    int pos = startContentIdx;
                     while (pos < text.Length && depth > 0)
+                    // depth > 0: still have unmatched open tags.
                     {
-                        int nextOpen = text.IndexOf("<" + tagName, pos, StringComparison.OrdinalIgnoreCase);
-                        int nextClose = text.IndexOf("</" + tagName, pos, StringComparison.OrdinalIgnoreCase);
+                        int nextOpen = IndexOfTag(text, "<" + tagName, pos);
+                        int nextClose = IndexOfTag(text, "</" + tagName, pos);
 
                         if (nextClose == -1 && nextOpen == -1) break;
                         if (nextClose != -1 && (nextOpen == -1 || nextClose < nextOpen))
                         {
                             depth--;
-                            if (depth == 0) return text.Substring(startContentIdx, nextClose - startContentIdx);
                             pos = nextClose + tagName.Length + 3;
+                            if (depth == 0)
+                                return text.Substring(startContentIdx, nextClose - startContentIdx);
                         }
                         else
                         {
@@ -844,7 +829,12 @@ public static class HtmlReportWriter
                         }
                     }
                     int naiveEnd = text.IndexOf("</" + tagName + ">", startContentIdx, StringComparison.OrdinalIgnoreCase);
-                    return naiveEnd > startContentIdx ? text.Substring(startContentIdx, naiveEnd - startContentIdx) : string.Empty;
+                    return naiveEnd > startContentIdx
+                        ? text.Substring(startContentIdx, naiveEnd - startContentIdx)
+                        : string.Empty;
+
+                    static int IndexOfTag(string src, string token, int start)
+                        => src.IndexOf(token, start, StringComparison.OrdinalIgnoreCase);
                 }
             }
 
@@ -888,8 +878,7 @@ public static class HtmlReportWriter
             if (txt) parts.push(txt);
           }}
         }});
-        // one blank line between scripts
-        return parts.join('\n\n');
+        return parts.join('\nGO\n\n') + (parts.length ? '\nGO' : '');
       }}
 
       const btn = document.getElementById('copyAll');

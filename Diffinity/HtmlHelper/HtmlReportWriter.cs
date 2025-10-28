@@ -524,6 +524,7 @@ public static class HtmlReportWriter
        .code-scroll {
             height: 60vh;
             overflow: auto; 
+            width: 100%;
         }
         .code-block {
             display: grid;
@@ -532,7 +533,6 @@ public static class HtmlReportWriter
             line-height: 1.4;
             padding: 10px;
             white-space: pre;
-            width: fit-content; 
         }
 
          .line-number {
@@ -545,6 +545,7 @@ public static class HtmlReportWriter
               white-space: pre;        
               font-family: Consolas;
               overflow-wrap: break-word;
+              width: 100%;
          }
         .copy-btn {
             float: right;

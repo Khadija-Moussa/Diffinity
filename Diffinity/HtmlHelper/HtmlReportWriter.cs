@@ -733,15 +733,11 @@ public static class HtmlReportWriter
             // Build the copy payloads
             string sourceCopy = item.Type == "Table"
                 ? PrintTableInfo(item.SourceTableInfo, new List<string>())
-                : CopyText(summaryDir, item.SourceFile, item.SourceBody);
+                : item.SourceBody;
 
             string destCopy = item.Type == "Table"
                 ? PrintTableInfo(item.DestinationTableInfo, new List<string>())
-                : CopyText(summaryDir, item.DestinationFile, null);
-
-            // HTML-encode before injecting into the hidden span
-            string safeSourceCopy = System.Web.HttpUtility.HtmlEncode(sourceCopy ?? string.Empty);
-            string safeDestCopy = System.Web.HttpUtility.HtmlEncode(destCopy ?? string.Empty);
+                : item.DestinationBody;
 
             string sourceColumn = item.SourceFile != null
                 ? $@"<a href=""{item.SourceFile}"">View</a>
@@ -750,7 +746,7 @@ public static class HtmlReportWriter
              <path d=""M16 1H4c-1.1 0-2 .9-2 2v12h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z""/>
            </svg>
          </button>
-         <span class=""copy-target"" style=""display:none;"">{safeSourceCopy}</span>"
+         <span class=""copy-target"" style=""display:none;"">{sourceCopy}</span>"
                 : "—";
 
             string destinationColumn = item.DestinationFile != null
@@ -760,7 +756,7 @@ public static class HtmlReportWriter
              <path d=""M16 1H4c-1.1 0-2 .9-2 2v12h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z""/>
            </svg>
          </button>
-         <span class=""copy-target"" style=""display:none;"">{safeDestCopy}</span>"
+         <span class=""copy-target"" style=""display:none;"">{destCopy}</span>"
                 : "—";
 
 
@@ -826,82 +822,6 @@ public static class HtmlReportWriter
                        </body>
                        </html>");
         #endregion
-
-        static string CopyText(string baseDir, string? htmlRelativePath, string? fallbackPlainText)
-        {
-            if (!string.IsNullOrWhiteSpace(fallbackPlainText))
-                return fallbackPlainText;
-
-            if (string.IsNullOrWhiteSpace(htmlRelativePath))
-                return string.Empty;
-
-            try
-            {
-                string fullPath = Path.IsPathRooted(htmlRelativePath)
-                    ? htmlRelativePath
-                    : Path.Combine(baseDir, htmlRelativePath);
-
-                if (!File.Exists(fullPath))
-                    return string.Empty;
-
-                string html = File.ReadAllText(fullPath);
-
-                // --- locate <span class="copy-target"> (handles nested spans safely) ---
-                var open = Regex.Match(
-                    html,
-                    "<span\\s+[^>]*class=(?:\"|')(?=[^\"']*\\bcopy-target\\b)[^\"']*(?:\"|')[^>]*>",
-                    RegexOptions.IgnoreCase);
-
-                string inner = GetTagContents(html, open.Index + open.Length, "span");
-                return HtmlToPlainText(inner);
-            }
-            catch
-            {
-                return string.Empty;
-            }
-
-            // ---- local helpers ----
-            static string HtmlToPlainText(string s)
-            {
-                if (string.IsNullOrEmpty(s)) return string.Empty;
-                string noTags = Regex.Replace(s, "<[^>]+>", string.Empty, RegexOptions.Singleline);
-                return System.Net.WebUtility.HtmlDecode(noTags).Trim();
-            }
-
-            static string GetTagContents(string text, int startContentIdx, string tagName)
-            {
-                int depth = 1; // Think of depth as “how many <tagName>s are open and not yet closed.”
-                int pos = startContentIdx;
-                while (pos < text.Length && depth > 0)
-                // depth > 0: still have unmatched open tags.
-                {
-                    int nextOpen = IndexOfTag(text, "<" + tagName, pos);
-                    int nextClose = IndexOfTag(text, "</" + tagName, pos);
-
-                    if (nextClose == -1 && nextOpen == -1) break;
-                    if (nextClose != -1 && (nextOpen == -1 || nextClose < nextOpen))
-                    {
-                        depth--;
-                        pos = nextClose + tagName.Length + 3;
-                        if (depth == 0)
-                            return text.Substring(startContentIdx, nextClose - startContentIdx);
-                    }
-                    else
-                    {
-                        depth++;
-                        int endOpen = text.IndexOf('>', nextOpen);
-                        pos = (endOpen == -1) ? text.Length : (endOpen + 1);
-                    }
-                }
-                int naiveEnd = text.IndexOf("</" + tagName + ">", startContentIdx, StringComparison.OrdinalIgnoreCase);
-                return naiveEnd > startContentIdx
-                    ? text.Substring(startContentIdx, naiveEnd - startContentIdx)
-                    : string.Empty;
-
-                static int IndexOfTag(string src, string token, int start)
-                    => src.IndexOf(token, start, StringComparison.OrdinalIgnoreCase);
-            }
-        }
 
 
         #region 3-Update counts in the nav bar

@@ -206,6 +206,13 @@ public static class HtmlReportWriter
         .return-btn:hover {
             background-color: #b42a68;
         }
+          /* Visually dim a completed row */
+          .row-done { background-color:#eee !important; }
+          .row-done td { background-color:#eee !important; opacity:.6; }
+
+          /* keep checkbox column neat */
+          .done-col { text-align:center; width:80px; }
+          .done-col input { vertical-align:middle; }
     </style>
 </head>
 <body>
@@ -220,7 +227,7 @@ public static class HtmlReportWriter
         <th>{source} Original</th>
         <th>{destination} Original</th>
         <th>Changes</th>
-        <th class=""done-col"">Done</th>
+        <th class=""done-col""></th>
     </tr>
     ";
     private const string IgnoredTemplate = @"
@@ -637,38 +644,33 @@ public static class HtmlReportWriter
         string returnPage = Path.Combine("..", "index.html");
         html.Append(ComparisonTemplate.Replace("{source}", sourceServer.name).Replace("{destination}", destinationServer.name).Replace("{MetaData}", result.Type).Replace("{nav}", BuildNav(run, isIgnoredEmpty,ignoredCount)));
         html.AppendLine(@"
-        <style>
-          .row-done { background:#eee; }
-          .row-done td { opacity:.6; }
-          .done-col { text-align:center; width:80px; }
-          .done-col input { vertical-align:middle; }
-        </style>");
-
-
-
-        html.AppendLine(@"
         <script>
+          const STORE = sessionStorage; 
+
           function toggleRow(cb){
-              const tr = cb.closest('tr');
-              if (cb.checked) {
-                  tr.classList.add('row-done');
-                  localStorage.setItem(cb.dataset.key, '1');
-              } else {
-                  tr.classList.remove('row-done');
-                  localStorage.setItem(cb.dataset.key, '0');
-              }
+            const tr = cb.closest('tr');
+            tr.classList.toggle('row-done', cb.checked);
+            if (!cb.dataset.key) return;
+            STORE.setItem(cb.dataset.key, cb.checked ? '1' : '0');
           }
+
           function restoreAll(){
-              document.querySelectorAll('input.mark-done').forEach(cb => {
-                  const v = localStorage.getItem(cb.dataset.key);
-                  if (v === '1') {
-                      cb.checked = true;
-                      cb.closest('tr').classList.add('row-done');
-                  }
-              });
+            document.querySelectorAll('input.mark-done').forEach(cb => {
+              const key = cb.dataset.key;
+              if (!key) return;
+              const v = STORE.getItem(key);
+              if (v === '1') {
+                cb.checked = true;
+                cb.closest('tr')?.classList.add('row-done');
+              }
+            });
           }
+
           document.addEventListener('DOMContentLoaded', restoreAll);
-        </script>");
+        </script>"
+
+);
+
         #region 1-Create the new table
         var newObjects = results.Where(r => r.IsDestinationEmpty).ToList();
         if (newObjects.Any())
@@ -681,7 +683,7 @@ public static class HtmlReportWriter
                     <th>{result.Type} Name</th>
                     <th></th>
                     <th></th>
-                    <th class=""done-col"">Done</th>
+                    <th class=""done-col""></th>
                 </tr>");
 
             int newCount = 1;

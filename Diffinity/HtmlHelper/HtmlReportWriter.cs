@@ -10,7 +10,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Text.RegularExpressions;
 using static Diffinity.DbObjectHandler;
-using System.Net; 
+using System.Net;
 
 
 
@@ -902,7 +902,7 @@ public static class HtmlReportWriter
     <span class=""copy-target copy-dst"" style=""display:none;"">{destCopy}</span>" : "—";
 
             string differencesColumn = item.DifferencesFile != null ? $@"<a href=""{item.DifferencesFile}"">View</a>" : "—";
-                string newColumn = item.NewFile != null ? $@"<a href=""{item.NewFile}"">View</a>" : "—";
+            string newColumn = item.NewFile != null ? $@"<a href=""{item.NewFile}"">View</a>" : "—";
 
             if ((item.IsEqual && filter == DbObjectFilter.ShowUnchanged) || !item.IsEqual)
             {
@@ -942,20 +942,21 @@ public static class HtmlReportWriter
         </script>
         <script>
           (function() {
-            // per-column select-all stays the same...
             const srcAll = document.getElementById('chk-src-all');
             const dstAll = document.getElementById('chk-dst-all');
-            if (srcAll) {
-              srcAll.addEventListener('change', () => {
-                document.querySelectorAll('.sel-src').forEach(cb => cb.checked = srcAll.checked);
-              });
-            }
-            if (dstAll) {
-              dstAll.addEventListener('change', () => {
-                document.querySelectorAll('.sel-dst').forEach(cb => cb.checked = dstAll.checked);
-              });
-            }
 
+            function toggleColumn(allCb, itemSelector) {
+              const items = document.querySelectorAll(itemSelector);
+              if (!items.length) return;
+
+              if (allCb.checked) {
+                items.forEach(cb => { cb.checked = true; cb.disabled = true; });
+              } else {
+                items.forEach(cb => { cb.disabled = false; cb.checked = false; });
+              }
+            }
+            if (srcAll) srcAll.addEventListener('change', () => toggleColumn(srcAll, '.sel-src'));
+            if (dstAll) dstAll.addEventListener('change', () => toggleColumn(dstAll, '.sel-dst'));
             function getText(el) {
               // Prefer textContent; trim trailing/leading whitespace
               return (el && el.textContent ? el.textContent : '').trim();
@@ -1016,7 +1017,7 @@ public static class HtmlReportWriter
 
         #endregion
 
-        #region 3-Update counts in the nav bar
+        #region 3-Update counts
         int newObjectsCount = newObjects.Count();
         int notEqualCount = existingObjects.Count(r => !r.IsEqual);
         int equalCount = existingObjects.Count(r => r.IsEqual);

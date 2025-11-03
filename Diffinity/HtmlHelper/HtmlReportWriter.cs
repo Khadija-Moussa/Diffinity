@@ -278,6 +278,7 @@ public static class HtmlReportWriter
     <h1>[{source}] vs [{destination}] </h1>
     {nav}
     {NewTable}
+    {UnchangedTable}
     {copySection}
 <table>
     <tr>
@@ -722,8 +723,7 @@ public static class HtmlReportWriter
         DateTime date = DateTime.UtcNow; ;
         string Date = date.ToString("MM/dd/yyyy hh:mm tt ") + "UTC";
         TimeSpan ts = TimeSpan.FromMilliseconds(Duration);
-        double minutes = Duration / 60000.0;
-        string formattedDuration = $"{minutes:F1} minutes";
+        string formattedDuration = ts.TotalMinutes >= 1 ? $"{ts.TotalMinutes:F1} minutes" : $"{ts.TotalSeconds:F0} seconds";
 
         static bool Show(string? path, int count) =>
             !string.IsNullOrWhiteSpace(path) && (count > 0);
@@ -882,6 +882,80 @@ public static class HtmlReportWriter
         }
         #endregion
 
+        #region 2-Create the Unchanged Objects Table
+        var unchangedObjects = results.Where(r => r.IsEqual && filter == DbObjectFilter.ShowUnchanged).ToList();
+        if (unchangedObjects.Any())
+        {
+            StringBuilder unchangedTable = new StringBuilder();
+            unchangedTable.AppendLine($@"<h2 style=""color: #B42A68;"">Unchanged {result.Type}s : </h2>
+            <table>
+                <tr>
+                    <th></th>
+                    <th>{result.Type} Name</th>
+                    <th></th>
+                    <th></th>
+                    <th class=""done-col""></th>
+                </tr>");
+
+            int newCount = 1;
+            foreach (var item in unchangedObjects)
+            {
+
+                string copyPayload = item.Type == "Table"
+                    ? CreateTableScript(item.schema, item.Name, item.SourceTableInfo)
+                    : item.SourceBody;
+
+
+                string sourceLink = $@"<a href=""{item.SourceFile}"">View</a";
+                string copyButton = $@"<button class=""copy-btn"" onclick=""copyPane(this)"">{CopyIcon}{CheckIcon}</button><br>
+                <span class=""copy-target"" style=""display:none;"">{copyPayload}</span>";
+
+                unchangedTable.Append($@"<tr data-key=""Unchanged|{result.Type}|{item.schema}.{item.Name}"">
+                                <td>{newCount}</td>
+                                <td>{item.schema}.{item.Name}</td>
+                                <td>{sourceLink}</td>
+                                <td>{copyButton}</td>
+                                <td class=""done-col"">
+                                    <input type=""checkbox""
+                                           class=""mark-done""
+                                           onchange=""toggleRow(this)""
+                                           data-key=""Unchanged|{result.Type}|{item.schema}.{item.Name}"">
+                                </td>
+                                </tr>");
+                newCount++;
+            }
+
+            unchangedTable.Append("</table><br><br>");
+            unchangedTable.AppendLine(
+                @"<script>
+                    function copyPane(button) {
+                        const container = button.closest('tr');
+                        const codeBlock = container.querySelector('.copy-target');
+                        const text = codeBlock?.innerText.trim();
+
+                        navigator.clipboard.writeText(text).then(() => {
+                            button.classList.add('copied'); 
+                            setTimeout(() => button.classList.remove('copied'), 2000); 
+                        }).catch(err => {
+                            console.error('Copy failed:', err);
+                            alert('Failed to copy!');
+                        });
+                     }
+                </script>"
+            );
+            html.Replace("{UnchangedTable}", unchangedTable.ToString());
+
+        }
+        else
+        {
+            html.Replace("{UnchangedTable}", "");
+        }
+
+
+        #endregion
+
+
+
         var existingObjects = results.Where(r => !r.IsDestinationEmpty).ToList();
         string copySection = existingObjects.Any() ? $@"<div class=""copy-Section"" style=""display:flex;justify-content:flex-end;margin:10px 0 6px 0;"">
         <button id=""copyAll"" class=""copy-selected"">Copy Selected</button>
@@ -890,7 +964,7 @@ public static class HtmlReportWriter
         html.Replace("{copySection}", copySection);
 
 
-        #region 2-Create the Comparison Table
+        #region 3-Create the Changed Objects Table
         int Number = 1;
         html.AppendLine($@"<h2 style = ""color: #B42A68;"">Changed {result.Type}s :</h2>");
         foreach (var item in existingObjects)

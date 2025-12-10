@@ -81,6 +81,7 @@ public static class HtmlReportWriter
         color: #2C3539;
         text-align: center;
         margin-bottom:40px;
+        font-weight: normal;
         }
 
         table.conn {
@@ -108,19 +109,27 @@ public static class HtmlReportWriter
             color: #333;               
         }
         .legend { text-align:center; color:#666; margin:14px 0 18px 0; }
+
+        .logo {
+            display: block;
+            margin: 0 auto 20px auto;
+            width: 100px;    
+        }
+
     </style>
 </head>
 <body>
-    <h1>Database Comparison Summary</h1>
-    {connectionsTable}
+    <img src=""images/diffinitylogo.png"" class=""logo"" alt=""Diffinity Logo"" />
+    <h1>Diffinity Report</h1>
     <h3>{Date}</h3>
     <h3>{Duration}</h3>
+    {connectionsTable}
     <div class=""legend"">{countsLegend}</div>
     <ul>
-        <li>{procsIndex}</li>
-        <li>{viewsIndex}</li>
-        <li>{tablesIndex}</li>
         <li>{udtsIndex}</li>
+        <li>{tablesIndex}</li>
+        <li>{viewsIndex}</li>
+        <li>{procsIndex}</li>
         <li>{ignoredIndex}</li>
     </ul>
 </body>
@@ -715,6 +724,20 @@ public static class HtmlReportWriter
     /// </summary>
     public static string WriteIndexSummary(DbServer source, DbServer destination,string outputPath, long Duration, string? ignoredIndexPath = null, string? procIndexPath = null, string? viewIndexPath = null, string? tableIndexPath = null, string? udtIndexPath = null, int? procCount = 0, int? viewCount = 0 , int? tableCount = 0, int? udtCount = 0, string? procsCountText = null, string? viewsCountText = null, string? tablesCountText = null, string? udtsCountText = null)
     {
+        string sourceImagesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "HtmlHelper", "images");
+        string destImagesPath = Path.Combine(outputPath, "images");
+
+        if (Directory.Exists(sourceImagesPath))
+        {
+            Directory.CreateDirectory(destImagesPath);
+            foreach (string file in Directory.GetFiles(sourceImagesPath))
+            {
+                string fileName = Path.GetFileName(file);
+                File.Copy(file, Path.Combine(destImagesPath, fileName), true);
+            }
+        }
+
+
         // Extract server and database names from connection strings
         var sourceBuilder = new SqlConnectionStringBuilder(source.connectionString);
         var destinationBuilder = new SqlConnectionStringBuilder(destination.connectionString);
@@ -757,17 +780,17 @@ public static class HtmlReportWriter
         static bool Show(string? path, int count) =>
             !string.IsNullOrWhiteSpace(path) && (count > 0);
 
-        string procsIndex = Show(procIndexPath, procCount.Value)
-            ? $@"<a href=""{procIndexPath}""  class=""btn"">Procedures {procsCountText}</a>" : "";
-
-        string viewsIndex = Show(viewIndexPath, viewCount.Value)
-            ? $@"<a href=""{viewIndexPath}""  class=""btn"">Views {viewsCountText}</a>" : "";
+        string udtsIndex = Show(udtIndexPath, udtCount.Value)
+            ? $@"<a href=""{udtIndexPath}"" class=""btn"">Udts {udtsCountText}</a>" : "";
 
         string tablesIndex = Show(tableIndexPath, tableCount.Value)
             ? $@"<a href=""{tableIndexPath}"" class=""btn"">Tables {tablesCountText}</a>" : "";
 
-        string udtsIndex = Show(udtIndexPath, udtCount.Value)
-            ? $@"<a href=""{udtIndexPath}"" class=""btn"">Udts {udtsCountText}</a>" : "";
+        string viewsIndex = Show(viewIndexPath, viewCount.Value)
+            ? $@"<a href=""{viewIndexPath}""  class=""btn"">Views {viewsCountText}</a>" : "";
+
+        string procsIndex = Show(procIndexPath, procCount.Value)
+            ? $@"<a href=""{procIndexPath}""  class=""btn"">Procedures {procsCountText}</a>" : "";
 
 
         string ignoredIndex = string.IsNullOrWhiteSpace(ignoredIndexPath)
@@ -779,8 +802,8 @@ public static class HtmlReportWriter
             .Any(t => !string.IsNullOrWhiteSpace(t) && t.Count(ch => ch == '/') == 3);
 
         string countsLegend = legendHasUnchanged
-            ? "Counts are (new / unchanged / changed / tenant)"
-            : "Counts are (new / changed / tenant)";
+            ? "new/unchanged/changed/tenant"
+            : "new/changed/tenant";
 
         // Replace placeholders in the index template
         html.Append(
@@ -2285,23 +2308,23 @@ ALTER TABLE [{schema}].[{table}] DROP COLUMN [{srcCol.columnName}];";
                 sb.AppendLine($@"  <a href=""{udtsPath}"">Udts {{udtsCount}}</a>");
                 break;
             case Run.ProcView:
-                sb.AppendLine($@"  <a href=""{proceduresPath}"">Procedures {{procsCount}}</a>");
                 sb.AppendLine($@"  <a href=""{viewsPath}"">Views {{viewsCount}}</a>");
+                sb.AppendLine($@"  <a href=""{proceduresPath}"">Procedures {{procsCount}}</a>");
                 break;
             case Run.ProcTable:
-                sb.AppendLine($@"  <a href=""{proceduresPath}"">Procedures {{procsCount}}</a>");
                 sb.AppendLine($@"  <a href=""{tablesPath}"">Tables {{tablesCount}}</a>");
+                sb.AppendLine($@"  <a href=""{proceduresPath}"">Procedures {{procsCount}}</a>");
                 break;
             case Run.ViewTable:
-                sb.AppendLine($@"  <a href=""{viewsPath}"">Views {{viewsCount}}</a>");
                 sb.AppendLine($@"  <a href=""{tablesPath}"">Tables {{tablesCount}}</a>");
+                sb.AppendLine($@"  <a href=""{viewsPath}"">Views {{viewsCount}}</a>");
                 break;
 
             case Run.All:
-                sb.AppendLine($@"  <a href=""{proceduresPath}"">Procedures {{procsCount}}</a>");
-                sb.AppendLine($@"  <a href=""{viewsPath}"">Views {{viewsCount}}</a>");
-                sb.AppendLine($@"  <a href=""{tablesPath}"">Tables {{tablesCount}}</a>");
                 sb.AppendLine($@"  <a href=""{udtsPath}"">Udts {{udtsCount}}</a>");
+                sb.AppendLine($@"  <a href=""{tablesPath}"">Tables {{tablesCount}}</a>");
+                sb.AppendLine($@"  <a href=""{viewsPath}"">Views {{viewsCount}}</a>");
+                sb.AppendLine($@"  <a href=""{proceduresPath}"">Procedures {{procsCount}}</a>");
                 break;
 
             default:

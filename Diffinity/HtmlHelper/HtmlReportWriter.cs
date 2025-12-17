@@ -64,13 +64,16 @@ public static class HtmlReportWriter
             border-bottom: 1px solid #ddd;
             padding: 12px 14px;
             text-align: left;
-        }
 
+        }
         
         table.conn th {
             background-color: #f5f5f5; 
             color: black;   
             text-align: left;
+            font-weight: 600;
+            font-size: 1rem;
+
         }
 
         
@@ -86,8 +89,8 @@ public static class HtmlReportWriter
         }
 
         table.summary th {
-            background-color: #36454F;
-            color: white;
+            background-color: #f5f5f5; 
+            color: black;
             padding: 14px;
             text-align: right;
             font-weight: 600;
@@ -826,6 +829,7 @@ public static class HtmlReportWriter
 
         StringBuilder summaryTable = new StringBuilder();
         summaryTable.AppendLine(@"<table class=""summary"">");
+        summaryTable.AppendLine(@"<caption style=""font-size: 1.2rem; font-weight: 600; color: #36454F; padding: 10px; text-align: center;"">Change Log</caption>");
         bool legendHasUnchanged = new[] { procsCountText, viewsCountText, tablesCountText, udtsCountText }
             .Any(t => !string.IsNullOrWhiteSpace(t) && t.Count(ch => ch == '/') == 3);
 

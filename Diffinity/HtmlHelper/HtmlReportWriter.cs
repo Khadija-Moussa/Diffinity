@@ -68,7 +68,7 @@ public static class HtmlReportWriter
         }
         
         table.conn th {
-            background-color: #f5f5f5; 
+            background-color: #dedede; 
             color: black;   
             text-align: left;
             font-weight: 600;
@@ -89,7 +89,7 @@ public static class HtmlReportWriter
         }
 
         table.summary th {
-            background-color: #f5f5f5; 
+            background-color: #dedede; 
             color: black;
             padding: 14px;
             text-align: right;
@@ -193,7 +193,9 @@ public static class HtmlReportWriter
             text-align: left;
         }
         th {
-            background-color: #f5f5f5;
+            background-color: #dedede;
+            font-weight: 600;
+            font-size: 1rem;
         }
         .match {
             color: green;
@@ -387,7 +389,9 @@ public static class HtmlReportWriter
             text-align: left;
         }
         th {
-            background-color: #f5f5f5;
+            background-color: #dedede;
+            font-weight: 600;
+            font-size: 1rem;
         }
         .match {
             color: green;
@@ -528,7 +532,7 @@ public static class HtmlReportWriter
             color: #36454F;
             font-weight: 600;
             text-transform: uppercase;
-            font-size: 0.9rem;
+            font-size: 1rem;
         }
         
         tr:nth-child(even) {background - color: #f9f9f9;
@@ -795,8 +799,8 @@ public static class HtmlReportWriter
 </table>";
 
         StringBuilder html = new StringBuilder();
-        DateTime date = DateTime.UtcNow; 
-        string Date = date.ToString("MM/dd/yyyy hh:mm tt ") + "UTC";
+        DateTime date = DateTime.Now;
+        string Date = date.ToString("MM/dd/yyyy hh:mm tt");
         TimeSpan ts = TimeSpan.FromMilliseconds(Duration);
         string formattedDuration = ts.TotalMinutes >= 1 ? $"{ts.TotalMinutes:F1} minutes" : $"{ts.TotalSeconds:F0} seconds";
 
@@ -1651,7 +1655,7 @@ public static class HtmlReportWriter
             <button class='copy-btn' onclick='copyTableScript(""sourceScript"")'>{CopyIcon}{CheckIcon}</button>
             <div class='code-scroll' id='left'>
                 <table>
-                    <tr><th style='width:50px;'></th><th>Column Name</th><th>Column Type</th><th>Is Nullable</th><th>Max Length</th><th>Is Primary Key</th><th>Is Foreign Key</th></tr>");
+                    <tr><th style='width:10px; padding:0;'></th><th>Column Name</th><th>Column Type</th><th>Is Nullable</th><th>Max Length</th><th>Is Primary Key</th><th>Is Foreign Key</th></tr>");
 
         var destTableHtml = new StringBuilder();
         destTableHtml.AppendLine($@"
@@ -1660,7 +1664,7 @@ public static class HtmlReportWriter
         <button class='copy-btn' onclick='copyTableScript(""destScript"")'>{CopyIcon}{CheckIcon}</button>
         <div class='code-scroll' id='right'>
             <table>
-                <tr><th style='width:50px;'></th><th>Column Name</th><th>Column Type</th><th>Is Nullable</th><th>Max Length</th><th>Is Primary Key</th><th>Is Foreign Key</th></tr>");
+                <tr><th style='width:10px; padding:0;'></th><th>Column Name</th><th>Column Type</th><th>Is Nullable</th><th>Max Length</th><th>Is Primary Key</th><th>Is Foreign Key</th></tr>");
 
         // Track remaining columns that are not yet output
         var sourceRemaining = new Queue<tableDto>(sourceTable);
@@ -1733,7 +1737,7 @@ ALTER TABLE [{schema}].[{table}] ADD [{srcCol.columnName}] {srcCol.columnType}{l
 
                 html.AppendLine($@"
         <tr>
-            <td style='text-align:center; width:50px;'>{copyBtn}</td>
+            <td style='text-align:center; width:10px;padding:0;'>{copyBtn}</td>
             <td class='{nameCss}'>{srcCol.columnName}</td>
             <td class='{typeCss}'>{srcCol.columnType}</td>
             <td class='{nullCss}'>{srcCol.isNullable}</td>
@@ -1807,7 +1811,7 @@ ALTER TABLE [{schema}].[{table}] ADD [{destCol.columnName}] {destCol.columnType}
 
                 destTableHtml.AppendLine($@"
         <tr>
-            <td style='text-align:center; width:50px;'>{copyBtn}</td>
+            <td style='text-align:center; width:10px;padding:0; '>{copyBtn}</td>
             <td class='{nameCss}'>{destCol.columnName}</td>
             <td class='{typeCss}'>{destCol.columnType}</td>
             <td class='{nullCss}'>{destCol.isNullable}</td>

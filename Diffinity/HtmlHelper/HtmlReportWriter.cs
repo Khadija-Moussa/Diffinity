@@ -1711,6 +1711,10 @@ public static class HtmlReportWriter
                 string pkCss = destCol != null && srcCol.isPrimaryKey != destCol.isPrimaryKey ? "difference" : "";
                 string fkCss = destCol != null && srcCol.isForeignKey != destCol.isForeignKey ? "difference" : "";
 
+                string nullableDisplay = srcCol.isNullable?.Equals("YES", StringComparison.OrdinalIgnoreCase) == true ? "YES" : "";
+                string pkDisplay = srcCol.isPrimaryKey?.Equals("YES", StringComparison.OrdinalIgnoreCase) == true ? "YES" : "";
+                string fkDisplay = srcCol.isForeignKey?.Equals("YES", StringComparison.OrdinalIgnoreCase) == true ? "YES" : "";
+
                 // Generate script to make DESTINATION match SOURCE
                 string colAlter;
                 if (destCol != null)
@@ -1736,10 +1740,10 @@ ALTER TABLE [{schema}].[{table}] ADD [{srcCol.columnName}] {srcCol.columnType}{l
             <td style='text-align:center; width:50px;'>{copyBtn}</td>
             <td class='{nameCss}'>{srcCol.columnName}</td>
             <td class='{typeCss}'>{srcCol.columnType}</td>
-            <td class='{nullCss}'>{srcCol.isNullable}</td>
+            <td class='{nullCss}'>{nullableDisplay}</td>
             <td class='{lenCss}'>{srcCol.maxLength}</td>
-            <td class='{pkCss}'>{srcCol.isPrimaryKey}</td>
-            <td class='{fkCss}'>{srcCol.isForeignKey}</td>
+            <td class='{pkCss}'>{pkDisplay}</td>
+            <td class='{fkCss}'>{fkDisplay}</td>
         </tr>");
             }
             else
@@ -1785,6 +1789,10 @@ ALTER TABLE [{schema}].[{table}] ADD [{srcCol.columnName}] {srcCol.columnType}{l
                 string pkCss = srcCol != null && destCol.isPrimaryKey != srcCol.isPrimaryKey ? "difference" : "";
                 string fkCss = srcCol != null && destCol.isForeignKey != srcCol.isForeignKey ? "difference" : "";
 
+                string nullableDisplay = destCol.isNullable?.Equals("YES", StringComparison.OrdinalIgnoreCase) == true ? "YES" : "";
+                string pkDisplay = destCol.isPrimaryKey?.Equals("YES", StringComparison.OrdinalIgnoreCase) == true ? "YES" : "";
+                string fkDisplay = destCol.isForeignKey?.Equals("YES", StringComparison.OrdinalIgnoreCase) == true ? "YES" : "";
+
                 // Generate script to make SOURCE match DESTINATION
                 string colAlter;
                 if (srcCol != null)
@@ -1810,10 +1818,10 @@ ALTER TABLE [{schema}].[{table}] ADD [{destCol.columnName}] {destCol.columnType}
             <td style='text-align:center; width:50px;'>{copyBtn}</td>
             <td class='{nameCss}'>{destCol.columnName}</td>
             <td class='{typeCss}'>{destCol.columnType}</td>
-            <td class='{nullCss}'>{destCol.isNullable}</td>
+            <td class='{nullCss}'>{nullableDisplay}</td>
             <td class='{lenCss}'>{destCol.maxLength}</td>
-            <td class='{pkCss}'>{destCol.isPrimaryKey}</td>
-            <td class='{fkCss}'>{destCol.isForeignKey}</td>
+            <td class='{pkCss}'>{pkDisplay}</td>
+            <td class='{fkCss}'>{fkDisplay}</td>
         </tr>");
             }
             else
@@ -2496,25 +2504,30 @@ ALTER TABLE [{schema}].[{table}] DROP COLUMN [{srcCol.columnName}];";
             {
                 ColumnType = $@" <td class=""red"">{column.columnType}</td>";
             }
-            string isNullable = $"<td>{column.isNullable}</td>";
+            string nullableDisplay = column.isNullable?.Equals("YES", StringComparison.OrdinalIgnoreCase) == true ? "YES" : "";
+
+            string isNullable = $"<td>{nullableDisplay}</td>";
             if (differences.Contains(column.isNullable))
             {
-                isNullable = $@"<td class=""red"">{column.isNullable}</td>";
+                isNullable = $@"<td class=""red"">{nullableDisplay}</td>";
             }
             string maxLength = $"<td>{column.maxLength}</td>";
             if (differences.Contains(column.maxLength))
             {
                 maxLength = $@"<td class=""red"">{column.maxLength}</td>";
             }
-            string isPrimaryKey = $"<td>{column.isPrimaryKey}</td>";
+            string pkDisplay = column.isPrimaryKey?.Equals("YES", StringComparison.OrdinalIgnoreCase) == true ? "YES" : "";
+            string fkDisplay = column.isForeignKey?.Equals("YES", StringComparison.OrdinalIgnoreCase) == true ? "YES" : "";
+
+            string isPrimaryKey = $"<td>{pkDisplay}</td>";
             if (differences.Contains(column.isPrimaryKey))
             {
-                isPrimaryKey = $@"<td class=""red"">{column.isPrimaryKey}</td>";
+                isPrimaryKey = $@"<td class=""red"">{pkDisplay}</td>";
             }
-            string isForeignKey = $"<td>{column.isForeignKey}</td>";
+            string isForeignKey = $"<td>{fkDisplay}</td>";
             if (differences.Contains(column.isForeignKey))
             {
-                isForeignKey = $@"<td class=""red"">{column.isForeignKey}</td>";
+                isForeignKey = $@"<td class=""red"">{fkDisplay}</td>";
             }
             sb.AppendLine($@"<tr>
             {ColumnName}

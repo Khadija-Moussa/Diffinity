@@ -460,13 +460,13 @@ public static class HtmlReportWriter
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 40px auto;
-            max-width: 900px;
+            width: 90%;
             background-color: #fff;
             color: #222;
             padding: 20px 40px;
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.07);
-        }
+}
         h1 {
             color: #36454F;
             text-align: center;

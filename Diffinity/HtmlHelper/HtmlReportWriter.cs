@@ -1005,12 +1005,16 @@ public static class HtmlReportWriter
         if (newObjects.Any())
         {
             StringBuilder newTable = new StringBuilder();
-            newTable.AppendLine($@"<h2 id=""new"" style=""color: #2C3539;"">New {result.Type}s in {sourceServer.name} ({newObjectsCount}) : </h2>
-            <table>
+            newTable.AppendLine($@"
+                <div class=""copy-Section"" style=""display:flex;justify-content:flex-end;margin:10px 0 6px 0;"">
+                    <button id=""copyNew"" class=""copy-selected"">Copy Selected</button>
+                </div>
+                <h2 id=""new"" style=""color: #2C3539;"">New {result.Type}s in {sourceServer.name} ({newObjectsCount}) : </h2>
+                <table>
                 <tr>
                     <th></th>
                     <th>{result.Type} Name</th>
-                    <th></th>
+                    <th><label class=""hdr""><input type=""checkbox"" id=""chk-new-all""><span>Select All</span></label></th>
                     <th></th>
                     <th class=""done-col""></th>
                 </tr>");
@@ -1023,16 +1027,17 @@ public static class HtmlReportWriter
                     ? CreateTableScript(item.schema, item.Name, item.SourceTableInfo, item.SourceForeignKeys)
                     : item.SourceBody;
 
-                string sourceLink = $@"<a href=""{item.SourceFile}"">View</a";
+                string sourceLink = $@"<a href=""{item.SourceFile}"">View</a>";
+                string checkboxCell = $@"<label class='pick'><input type='checkbox' class='sel-new'></label>";
                 string copyButton = $@"<button class=""copy-btn"" onclick=""copyPane(this)"">{CopyIcon}{CheckIcon}</button><br>
-                <span class=""copy-target"" style=""display:none;"">{copyPayload}</span>";
+                <span class=""copy-target copy-new"" style=""display:none;"">{copyPayload}</span>";
                 string copyNameButton = $@"<button class=""name-copy-btn"" onclick=""copyPane(this)"">{SmallCopyIcon}{SmallCheckIcon}</button><span class=""copy-target"" style=""display:none;"">{item.schema}.{item.Name}</span>";
                 newTable.Append($@"<tr data-key=""new|{result.Type}|{item.schema}.{item.Name}"">
                         <td>{newCount}</td>
-                        <td> {item.schema}.{item.Name}{copyNameButton}</td>
-                                <td>{sourceLink}</td>
-                                <td>{copyButton}</td>
-                                <td class=""done-col"">
+                        <td>{item.schema}.{item.Name}{copyNameButton}</td>
+                        <td>{checkboxCell} {sourceLink}</td>
+                        <td>{copyButton}</td>
+                        <td class=""done-col"">
                                     <input type=""checkbox""
                                            class=""mark-done""
                                            onchange=""toggleRow(this)""
@@ -1058,6 +1063,45 @@ public static class HtmlReportWriter
                             alert('Failed to copy!');
                         });
                      }
+
+                const newAll = document.getElementById('chk-new-all');
+                if (newAll) {
+                    newAll.addEventListener('change', () => {
+                        document.querySelectorAll('.sel-new').forEach(cb => cb.checked = newAll.checked);
+                    });
+                }
+
+                const btnNew = document.getElementById('copyNew');
+                if (btnNew) {
+                    btnNew.addEventListener('click', () => {
+                        const rows = Array.from(document.querySelectorAll('table tr')).slice(1);
+                        const parts = [];
+        
+                        rows.forEach(tr => {
+                            const newCb = tr.querySelector('.sel-new');
+                            if (newCb && newCb.checked) {
+                                const span = tr.querySelector('.copy-new');
+                                const txt = (span && span.textContent ? span.textContent : '').trim();
+                                if (txt) parts.push(txt);
+                            }
+                        });
+        
+                        const blob = parts.length ? parts.join('\nGO\n\n') + '\nGO' : '';
+                        if (!blob) {
+                            alert('No items selected.');
+                            return;
+                        }
+        
+                        navigator.clipboard.writeText(blob).then(() => {
+                            const old = btnNew.textContent;
+                            btnNew.textContent = 'Copied!';
+                            setTimeout(() => btnNew.textContent = old, 1200);
+                        }).catch(err => {
+                            console.error('Copy failed:', err);
+                            alert('Failed to copy!');
+                        });
+                    });
+                }
                 </script>"
             );
             html.Replace("{NewTable}", newTable.ToString());

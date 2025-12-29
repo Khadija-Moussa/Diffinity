@@ -2508,10 +2508,11 @@ public static class HtmlReportWriter
                 var constraintNames = columnFKs.Select(fk => fk.ConstraintName).Distinct();
                 foreach (var constraintName in constraintNames)
                 {
+                    sb.AppendLine($"-- Drop FK constraint before dropping column");
                     sb.AppendLine($"ALTER TABLE [{schema}].[{table}] DROP CONSTRAINT [{constraintName}];");
                 }
             }
-
+            sb.AppendLine($"-- Drop column from [{schema}].[{table}]");
             sb.AppendLine($"ALTER TABLE [{schema}].[{table}] DROP COLUMN [{currentCol.columnName}];");
         }
         else if (targetCol != null)

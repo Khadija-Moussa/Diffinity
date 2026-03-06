@@ -172,6 +172,48 @@ public class DbComparer : DbObjectHandler
         }
 
     }
+
+    /// <summary>
+    /// One-vs-All: compares sourceServer against every server in targetServers.
+    /// Each pair gets its own sub-folder. A combined index.html is written at the root.
+    /// </summary>
+    public static string CompareOneVsAll(
+
+        DbServer sourceServer,
+        IEnumerable<DbServer> targetServers,
+        int threadCount = 4,
+        ILogger? logger = null,
+        string? outputFolder = null,
+        ComparerAction makeChange = ComparerAction.DoNotApplyChanges,
+        DbObjectFilter filter = DbObjectFilter.HideUnchanged,
+        Run run = Run.All)
+    {
+        var sw = Stopwatch.StartNew();
+        string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+        string rootFolder = outputFolder ?? $"{sourceServer.name}_vs_all_{timestamp}";
+        Directory.CreateDirectory(rootFolder);
+
+        var targets = targetServers.ToList();
+
+        var pairResults = new List<(DbServer target, string subFolder, string indexPath)>();
+
+        foreach (var target in targets)
+        {
+            string subFolder = Path.Combine(rootFolder, $"{sourceServer.name}_vs_{target.name}");
+            string indexHtmlPath = Compare(
+                sourceServer, target,
+                threadCount, logger, subFolder,
+                makeChange, filter, run);
+
+            pairResults.Add((target, subFolder, indexHtmlPath));
+        }
+
+        sw.Stop();
+        string combinedIndex = HtmlReportWriter.WriteMultiCompareIndex(
+    sourceServer, targets, rootFolder, pairResults, sw.ElapsedMilliseconds);
+        return combinedIndex;
+
+    }
     public static summaryReportDto CompareProcs(DbServer sourceServer, DbServer destinationServer, string outputFolder, ComparerAction makeChange, DbObjectFilter filter, Run run, HashSet<string> ignoredObjects, Dictionary<string, List<string>> objectTags, Dictionary<string, string> tagColors, int threadCount)
     {
         ParallelOptions parallelOptions = new() { MaxDegreeOfParallelism = threadCount };

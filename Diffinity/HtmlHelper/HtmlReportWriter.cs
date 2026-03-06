@@ -154,13 +154,14 @@ public static class HtmlReportWriter
     </style>
 </head>
 <body>
-    <img src=""images/diffinitylogo.png"" class=""logo"" alt=""Diffinity Logo"" />
-    <h1>Diffinity Report</h1>
+    {logo}
+    <h1>{title}</h1>
     <h5>{Date}</h5>
     <h5>{Duration}</h5>
     {connectionsTable}
     {summaryTable}
     {ignoredIndex}
+    {backButton}
 </body>
 </html>
 ";
@@ -834,6 +835,60 @@ public static class HtmlReportWriter
         </head>
         <body>";
 
+    #region Multi-Compare Index Writer
+    public static string WriteMultiCompareIndex(DbServer sourceServer, List<DbServer> targets, string rootFolder, List<(DbServer target, string subFolder, string indexPath)> pairResults, long durationMs)
+    {
+        string sourceImagesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "HtmlHelper", "images");
+        string destImagesPath = Path.Combine(rootFolder, "images");
+        if (Directory.Exists(sourceImagesPath))
+        {
+            Directory.CreateDirectory(destImagesPath);
+            foreach (string file in Directory.GetFiles(sourceImagesPath))
+            {
+                string fileName = Path.GetFileName(file);
+                File.Copy(file, Path.Combine(destImagesPath, fileName), true);
+            }
+        }
+
+        string date = DateTime.Now.ToString("MM/dd/yyyy hh:mm tt");
+        TimeSpan ts = TimeSpan.FromMilliseconds(durationMs);
+        string duration = ts.TotalMinutes >= 1 ? $"{ts.TotalMinutes:F1} minutes" : $"{ts.TotalSeconds:F0} seconds";
+        string targetNames = string.Join(", ", targets.Select(t => t.name));
+
+        var sb = new StringBuilder();
+        sb.AppendLine(IndexTemplate
+            .Replace("{logo}", @"<img src=""images/diffinitylogo.png"" class=""logo"" alt=""Diffinity Logo"" />")
+            .Replace("{title}", $"Diffinity Report")
+            .Replace("{backButton}", "")
+            .Replace("{Date}", date)
+            .Replace("{Duration}", duration)
+            .Replace("{connectionsTable}", $@"")
+            .Replace("{summaryTable}", $@"
+                <table class=""summary"">
+                <caption style=""font-size:1.2rem;font-weight:600;color:#36454F;padding:10px;text-align:center;"">
+                {sourceServer.name} vs {targetNames}
+                </caption>
+                <tr>
+                <th style=""text-align:left"">Target Database</th>
+                <th style=""text-align:left"">Report</th>
+                </tr>
+            {string.Join("\n", pairResults.Select(p => $@"
+               <tr>
+                    <td id=""left"">{p.target.name}</td>
+                     <td id=""left""><a href=""{sourceServer.name}_vs_{p.target.name}/{sourceServer.name}_{p.target.name}.html"">
+            {sourceServer.name} vs {p.target.name}
+                    </a></td>
+                 </tr>"))}
+              </table>")
+            .Replace("{ignoredIndex}", "")
+        );
+
+        string outPath = Path.Combine(rootFolder, "index.html");
+        File.WriteAllText(outPath, sb.ToString());
+        return outPath;
+    }
+    #endregion
+
     #region Index Report Writer
     /// <summary>
     /// Writes the main index summary HTML page linking to individual reports for procedures, views, and tables.
@@ -1050,14 +1105,15 @@ public static class HtmlReportWriter
 
         html.Append(
             IndexTemplate
-              .Replace("{connectionsTable}", connectionsTable)
+              .Replace("{logo}", "")
+              .Replace("{title}", $"{source.name} vs {destination.name}")
+              .Replace("{backButton}", @"<a href=""../index.html"" class=""btn"">Return to Overview</a>").Replace("{connectionsTable}", connectionsTable)
               .Replace("{summaryTable}", summaryTable.ToString())
               .Replace("{ignoredIndex}", ignoredIndex)
               .Replace("{Date}", Date)
               .Replace("{Duration}", formattedDuration)
         );
         string indexPath = Path.Combine(outputPath, $"{source.name}_{destination.name}.html");
-        // Write to index.html
         File.WriteAllText(indexPath, html.ToString());
         return indexPath;
     }

@@ -5,22 +5,11 @@ internal class Program
 {
     static void Main(string[] args)
     {
-<<<<<<< comparesetofdbs
         var Corewell = new DbServer("Corewell", Environment.GetEnvironmentVariable("connectionString"));
         var CMH = new DbServer("CMH", Environment.GetEnvironmentVariable("cmhCs"));
         var DEV002 = new DbServer("DEV002", Environment.GetEnvironmentVariable("dev2Cs"));
 
         string reportPath = DbComparer.CompareOneVsAll(Corewell,CMH,DEV002);
-=======
-        var source = new DbServer("Corewell", Environment.GetEnvironmentVariable("connectionString"));
-        var targets = new List<DbServer>
-        {
-            new DbServer("CMH",       Environment.GetEnvironmentVariable("cmhCs")),
-            new DbServer("DEV002",   Environment.GetEnvironmentVariable("dev2Cs")),
-        };
-
-        string reportPath = DbComparer.CompareOneVsAll(source,targets);
->>>>>>> master
 
         Process.Start(new ProcessStartInfo(reportPath) { UseShellExecute = true });
 

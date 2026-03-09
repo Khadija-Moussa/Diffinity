@@ -177,6 +177,7 @@ public class DbComparer : DbObjectHandler
     /// One-vs-All: compares sourceServer against every server in targetServers.
     /// Each pair gets its own sub-folder. A combined index.html is written at the root.
     /// </summary>
+<<<<<<< comparesetofdbs
     public static string CompareOneVsAll(DbServer sourceServer,params DbServer[] targetServers)
     {
         int threadCount = 4;
@@ -186,6 +187,21 @@ public class DbComparer : DbObjectHandler
         DbObjectFilter filter = DbObjectFilter.HideUnchanged;
         Run run = Run.All;
         var sw = Stopwatch.StartNew(); string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+=======
+    public static string CompareOneVsAll(
+
+        DbServer sourceServer,
+        IEnumerable<DbServer> targetServers,
+        int threadCount = 4,
+        ILogger? logger = null,
+        string? outputFolder = null,
+        ComparerAction makeChange = ComparerAction.DoNotApplyChanges,
+        DbObjectFilter filter = DbObjectFilter.HideUnchanged,
+        Run run = Run.All)
+    {
+        var sw = Stopwatch.StartNew();
+        string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+>>>>>>> master
         string rootFolder = outputFolder ?? $"{sourceServer.name}_vs_all_{timestamp}";
         Directory.CreateDirectory(rootFolder);
 
